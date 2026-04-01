@@ -6,6 +6,64 @@ interface SenhaGerada {
   tipo: "NORMAL" | "PRIORIDADE";
 }
 
+const handlePrintSenha = (senha: SenhaGerada) => {
+  const horario = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const printWindow = window.open("", "_blank", "width=300,height=400");
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Senha ${senha.codigo}</title>
+        <style>
+          @media print {
+            @page {
+              size: 80mm auto;
+              margin: 2mm;
+            }
+          }
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 4mm 2mm;
+          }
+          .titulo { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+          .separador { border: none; border-top: 1px dashed #333; margin: 8px 0; }
+          .senha { font-size: 56px; font-weight: 900; letter-spacing: 4px; margin: 12px 0 4px; }
+          .tipo { font-size: 14px; font-weight: bold; margin-bottom: 8px; }
+          .horario { font-size: 13px; color: #555; margin-bottom: 12px; }
+          .rodape { font-size: 11px; color: #777; }
+        </style>
+      </head>
+      <body>
+        <div class="titulo">INSS</div>
+        <hr class="separador" />
+        <div class="senha">${senha.codigo}</div>
+        <div class="tipo">${senha.tipo}</div>
+        <div class="horario">${horario}</div>
+        <hr class="separador" />
+        <div class="rodape">Aguarde sua senha ser chamada</div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.onafterprint = () => printWindow.close();
+    // Fallback: fechar após 3s caso onafterprint não dispare
+    setTimeout(() => {
+      try { printWindow.close(); } catch {}
+    }, 3000);
+  }, 300);
+};
+
 const Triagem = () => {
   const [ultimaSenha, setUltimaSenha] = useState<SenhaGerada | null>(null);
   const [contadorNormal, setContadorNormal] = useState(0);
@@ -19,9 +77,11 @@ const Triagem = () => {
 
     const novoContador = contadorNormal + 1;
     const codigo = `N${String(novoContador).padStart(3, "0")}`;
+    const novaSenha: SenhaGerada = { codigo, tipo: "NORMAL" };
 
     setContadorNormal(novoContador);
-    setUltimaSenha({ codigo, tipo: "NORMAL" });
+    setUltimaSenha(novaSenha);
+    handlePrintSenha(novaSenha);
 
     toast({
       title: "Senha gerada",
@@ -38,9 +98,11 @@ const Triagem = () => {
 
     const novoContador = contadorPrioridade + 1;
     const codigo = `P${String(novoContador).padStart(3, "0")}`;
+    const novaSenha: SenhaGerada = { codigo, tipo: "PRIORIDADE" };
 
     setContadorPrioridade(novoContador);
-    setUltimaSenha({ codigo, tipo: "PRIORIDADE" });
+    setUltimaSenha(novaSenha);
+    handlePrintSenha(novaSenha);
 
     toast({
       title: "Senha gerada",
